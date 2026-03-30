@@ -19,7 +19,7 @@ class TradingViewViewSet(viewsets.GenericViewSet):
     def config(self, request):
         """返回图表配置"""
         return Response({
-            "supported_resolutions": ["5", "30", "1D", "1W", "1M"],
+            "supported_resolutions": ["5", "30", "1D", "1W", "1M", "3M", "1Y"],
             "supports_group_request": False,
             "supports_search": True,
             "supports_time": True,
@@ -86,7 +86,9 @@ class TradingViewViewSet(viewsets.GenericViewSet):
             "has_daily": True,
             "has_weekly": True,
             "has_monthly": True,
-            "supported_resolutions": ["5","30", "1D", "1W", "1M"],
+            "has_quarterly": True,
+            "has_yearly": True,
+            "supported_resolutions": ["5","30", "1D", "1W", "1M", "3M", "1Y"],
             "volume_precision": 0,
             "data_status": "streaming",
             "daily_multipliers": ["1", "2"]

@@ -133,6 +133,8 @@ def _get_ts_freq(czsc_freq: Freq | str) -> str:
         "日线": "daily",
         "周线": "weekly",
         "月线": "monthly",
+        "季线": "quarterly",
+        "年线": "yearly",
         "5分钟": "5min",
         "30分钟": "30min",
     }
@@ -161,6 +163,8 @@ def _resolution_to_freq(resolution: str) -> Freq | None:
         "1D": Freq.D,
         "1W": Freq.W,
         "1M": Freq.M,
+        "3M": Freq.S,  # 季线
+        "1Y": Freq.Y,  # 年线
     }
     return mapping.get(r)
 
@@ -449,8 +453,8 @@ def get_history_data(
     perf["czsc_parse_ms"] = (_time.perf_counter() - czsc_parse_start) * 1000
     perf["bi_count"] = len(c.bi_list)
 
-    # 判断是否为日线级别（日线/周线/月线），用于时间戳转换
-    is_daily = freq_enum in (Freq.D, Freq.W, Freq.M)
+    # 判断是否为日线级别（日线/周线/月线/季线/年线），用于时间戳转换
+    is_daily = freq_enum in (Freq.D, Freq.W, Freq.M, Freq.S, Freq.Y)
 
     # --- K线：对象列表 -> 等长数组（并支持 from/to/countback 裁剪） ---
     bars = list(c.bars_raw)

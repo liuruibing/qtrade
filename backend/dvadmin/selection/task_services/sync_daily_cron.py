@@ -64,7 +64,7 @@ SYNC_TABLE = 'sync_log'
 ADJ_TYPE = "qfq"
 
 # 指定获取的周期频段
-PERIODS = ['daily', 'weekly', 'monthly', '5min', '30min']
+PERIODS = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', '5min', '30min']
 
 TARGET_DATE = os.getenv("SYNC_DATE", datetime.now().strftime("%Y%m%d")).strip()
 
@@ -132,11 +132,13 @@ def get_all_stocks():
 
 def fetch_kline_with_retry(ts_code, period, start_date, end_date, retries=MAX_RETRIES):
     """获取K线数据，带重试"""
-    # 扩展：加入了 5min 和 30min 映射
+    # 扩展：加入了 5min 和 30min 映射，以及季线、年线
     freq_map = {
         'daily': 'D', 
         'weekly': 'W', 
         'monthly': 'M', 
+        'quarterly': 'Q',
+        'yearly': 'Y',
         '5min': '5min', 
         '30min': '30min'
     }
@@ -180,8 +182,8 @@ def normalize_kline_df(df, period):
     df['trade_time'] = pd.to_datetime(df['trade_time'])
 
     # 统一提取逻辑：
-    # 将除了 daily 之外的股票周期（W/M/5min/30min）通常返回的元/股转换成千元/手
-    if period in ['weekly', 'monthly', '5min', '30min']:
+    # 将除了 daily 之外的股票周期（W/M/Q/Y/5min/30min）通常返回的元/股转换成千元/手
+    if period in ['weekly', 'monthly', 'quarterly', 'yearly', '5min', '30min']:
         if 'vol' in df.columns:
             df['vol'] = df['vol'] / 100  # 股 -> 手
         if 'amount' in df.columns:
