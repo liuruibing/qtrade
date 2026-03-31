@@ -250,21 +250,24 @@ const debouncedDrawChanlun = debounce(() => drawChanlun(), 1000);
 
 // 获取图表数据
 function getChartData() {
-  // console.log("chartWidget:::::::::::::::", chartWidget);
-  // console.log("activeChart:::::::::::::::", activeChart);
+  console.log("chartWidget:::::::::::::::", chartWidget);
+  console.log("activeChart:::::::::::::::", activeChart);
   if (!chartWidget || !activeChart) return null;
 
   const symbolInterval = chartWidget.symbolInterval();
-  // console.log("symbolInterval:::::::::::::::::", symbolInterval);
+  console.log("symbolInterval:::::::::::::::::", symbolInterval);
 
   if (!symbolInterval) return null;
 
   const symbolResKey = `${symbolInterval.symbol.toString().toLowerCase()}${symbolInterval.interval.toString().toLowerCase()}`;
-  // console.log("datafeed:::::::::::::::::", datafeed);
-  // console.log("symbolResKey:::::::::::::::::", symbolResKey);
+  console.log("datafeed:::::::::::::::::", datafeed);
+  console.log("symbolResKey:::::::::::::::::", symbolResKey);
+  console.log("_historyProvider:", datafeed?._historyProvider);
+  console.log("bars_result map:", datafeed?._historyProvider?.bars_result);
+  console.log("bars_result keys:", datafeed?._historyProvider?.bars_result ? Array.from(datafeed._historyProvider.bars_result.keys()) : 'N/A');
 
   const barsResult = datafeed?._historyProvider?.bars_result?.get(symbolResKey);
-  // console.log("barsResult:::::::::::::::::", barsResult);
+  console.log("barsResult:::::::::::::::::", barsResult);
   if (!barsResult) return null;
   const visibleRange = activeChart.getVisibleRange();
   const from = visibleRange?.from || 0;

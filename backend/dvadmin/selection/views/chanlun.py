@@ -164,7 +164,8 @@ def _resolution_to_freq(resolution: str) -> Freq | None:
         "1W": Freq.W,
         "1M": Freq.M,
         "3M": Freq.S,  # 季线
-        "1Y": Freq.Y,  # 年线
+        "12M": Freq.Y, # 年线（使用 12M 而不是 1Y）
+        "1Y": Freq.Y,  # 年线（兼容旧的 1Y 格式）
     }
     return mapping.get(r)
 
@@ -337,6 +338,7 @@ def get_history_data(
     - 叠加字段：bis（笔）、bi_zss（笔中枢）、mmds（买卖点）
     - 线段/中枢线段等（xds/zsds/xd_zss/zsd_zss/bcs）当前算法未提供，先返回空数组
     - 新增：_perf 字段包含各环节性能埋点数据
+    - 对于季线和年线，如果数据库中没有，则从日线数据实时聚合
     """
     import time as _time
     
@@ -361,6 +363,7 @@ def get_history_data(
         "bi_count": 0,
         "zs_count": 0,
         "bs_count": 0,
+        "is_aggregated": False,  # 是否从日线聚合而来
     }
     
     # ========== 1. 数据库连接 ==========
@@ -395,6 +398,56 @@ def get_history_data(
     
     perf["db_query_ms"] = (_time.perf_counter() - db_query_start) * 1000
     perf["kline_count"] = len(df)
+    
+    # 如果是季线或年线且没有数据，从日线数据聚合
+    if df.empty and freq_enum in (Freq.S, Freq.Y):
+        print(f"[DEBUG] {ts_code} 没有{freq_enum.value}数据，尝试从日线聚合...")
+        
+        # 查询日线数据
+        daily_query = text(
+            """
+            SELECT trade_time as dt, open, high, low, close, vol, amount
+            FROM stock_kline
+            WHERE ts_code = :code AND period = 'daily'
+            ORDER BY trade_time ASC
+            """
+        )
+        with engine.connect() as conn:
+            daily_df = pd.read_sql(daily_query, conn, params={"code": ts_code})
+        
+        if not daily_df.empty:
+            print(f"[DEBUG] 从 {len(daily_df)} 条日线数据聚合...")
+            
+            # 数据预处理
+            daily_df["dt"] = pd.to_datetime(daily_df["dt"])
+            daily_df = daily_df.sort_values("dt")
+            
+            # 设置索引并聚合
+            daily_df.set_index("dt", inplace=True)
+            
+            # 确定聚合规则
+            if freq_enum == Freq.S:
+                rule = "QE"  # 季度结束
+            else:  # Freq.Y
+                rule = "YE"  # 年度结束
+            
+            agg_dict = {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "vol": "sum",
+                "amount": "sum"
+            }
+            
+            df = daily_df.resample(rule).agg(agg_dict).dropna()
+            df.reset_index(inplace=True)
+            
+            perf["is_aggregated"] = True
+            perf["kline_count"] = len(df)
+            print(f"[DEBUG] 聚合后得到 {len(df)} 条{freq_enum.value}数据")
+        else:
+            print(f"[DEBUG] {ts_code} 也没有日线数据，无法聚合")
 
     if df.empty:
         perf["total_ms"] = (_time.perf_counter() - perf["total_start"]) * 1000

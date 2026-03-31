@@ -8,6 +8,7 @@ from dvadmin.selection.models import StockBasic, StockAnalysis
 # 调用的任务服务
 from dvadmin.selection.task_services.calculate_stock_analysis import calculate_stock_analysis
 from dvadmin.selection.task_services.sync_daily_cron import main as run_sync_daily
+from dvadmin.selection.tasks.eastmoney_spider import fetch_all_a_stock_quotes, sync_stock_quotes_to_db
 
 logger = logging.getLogger(__name__)
 
@@ -131,4 +132,59 @@ def task__sync_daily_cron(*args, **kwargs):
         return {"status": "success", "message": "日常同步任务执行成功"}
     except Exception as e:
         logger.error(f"日常同步任务执行失败: {str(e)}", exc_info=True)
+        raise
+
+
+@app.task
+def task__sync_eastmoney_quotes(*args, **kwargs):
+    """
+    东方财富网行情数据同步任务
+    从东方财富网获取所有A股实时行情数据
+    """
+    try:
+        logger.info("开始执行东方财富网行情同步任务")
+        
+        # 获取行情数据
+        quotes = fetch_all_a_stock_quotes()
+        
+        if not quotes:
+            logger.warning("未获取到任何行情数据")
+            return {"status": "warning", "message": "未获取到行情数据", "count": 0}
+        
+        logger.info(f"成功获取 {len(quotes)} 条行情数据")
+        
+        # 返回结果
+        return {
+            "status": "success",
+            "message": f"成功获取 {len(quotes)} 条行情数据",
+            "count": len(quotes),
+            "fetch_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+    except Exception as e:
+        logger.error(f"东方财富网行情同步任务执行失败: {str(e)}", exc_info=True)
+        raise
+
+
+@app.task
+def task__sync_eastmoney_quotes_to_db(*args, **kwargs):
+    """
+    东方财富网行情数据同步到数据库任务
+    获取行情数据并同步到数据库
+    """
+    try:
+        logger.info("开始执行东方财富网行情数据库同步任务")
+        
+        # 同步数据到数据库
+        result = sync_stock_quotes_to_db()
+        
+        logger.info(f"东方财富网行情数据库同步任务完成: {result}")
+        return {
+            "status": "success",
+            "message": "行情数据同步完成",
+            "result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"东方财富网行情数据库同步任务执行失败: {str(e)}", exc_info=True)
         raise

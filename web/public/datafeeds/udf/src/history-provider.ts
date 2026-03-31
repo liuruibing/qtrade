@@ -156,6 +156,8 @@ export class HistoryProvider {
       requestParams.unitId = symbolInfo.unit_id;
     }
 
+    console.log("HistoryProvider: getBars called with requestParams:", requestParams);
+
     return new Promise(
       async (
         resolve: (result: GetBarsResult) => void,
@@ -312,6 +314,10 @@ export class HistoryProvider {
         requestParams["symbol"].toString().toLowerCase() +
         requestParams["resolution"].toString().toLowerCase();
 
+      console.log("HistoryProvider: Saving data with res_key:", res_key);
+      console.log("HistoryProvider: response.s:", response.s);
+      console.log("HistoryProvider: response.keys:", Object.keys(response));
+
       // 保存数据
       let obj_res = this.bars_result.get(res_key);
       if (response.update == false || obj_res == undefined) {
@@ -329,6 +335,7 @@ export class HistoryProvider {
           mmds: (response as HistoryFullDataResponse).mmds,
           chart_color: (response as HistoryFullDataResponse).chart_color,
         });
+        console.log("HistoryProvider: Data saved to bars_result for key:", res_key);
       } else {
         // 更新存在的数据
         // 更新逻辑，找到大于等于返回的第一个时间的所有数据；

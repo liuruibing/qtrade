@@ -77,11 +77,11 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, watch, onBeforeUnmount, computed } from 'vue';
+import { getBaseURL } from '/@/utils/baseUrl';
 import TVChartContainer from '/@/components/TVChartContainer/index.vue';
 import rightContainer from './components/rightContainer.vue';
 import stockAnalysisAI from '/@/components/stockAnalysisAI/index.vue';
-let baseURL = import.meta.env.VITE_API_URL as any;
-const datafeedUrl = ref(baseURL + '/api/selection/tradingview');
+const datafeedUrl = ref(getBaseURL('api/selection/tradingview'));
 // const symbol = ref('000001.SH');
 const symbolInfo = ref<any>({
 	symbolId: '000001.SH',
